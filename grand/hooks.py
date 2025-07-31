@@ -21,8 +21,17 @@ app_license = "mit"
 # 	}
 # ]
 
-# Includes in <head>
-# ------------------
+doc_events = {
+    "Delivery Note": {
+        "on_submit": "grand.grand.delivery_note_events.create_stock_entry_from_delivery_sheet"
+    }
+}
+
+
+
+
+
+
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/grand/css/grand.css"
