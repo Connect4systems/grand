@@ -1,0 +1,22 @@
+[
+  {
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice",
+    "fieldname": "deductions",
+    "label": "Deductions",
+    "fieldtype": "Table",
+    "options": "Deduction",
+    "insert_after": "items",
+    "hidden": 0
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice",
+    "fieldname": "deduction_table",
+    "label": "Deduction Table",
+    "fieldtype": "Table",
+    "options": "Deduction Table",
+    "insert_after": "deductions",
+    "hidden": 0
+  }
+]

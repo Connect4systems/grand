@@ -1,0 +1,30 @@
+{
+ "doctype": "DocType",
+ "name": "Deduction",
+ "module": "Grand",
+ "istable": 1,
+ "editable_grid": 1,
+ "fields": [
+  {
+   "fieldname": "account",
+   "fieldtype": "Link",
+   "label": "Account",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "percent",
+   "fieldtype": "Percent",
+   "label": "Percent",
+   "reqd": 0
+  },
+  {
+   "fieldname": "value",
+   "fieldtype": "Float",
+   "label": "Value",
+   "read_only": 1
+  }
+ ],
+ "permissions": [],
+ "engine": "InnoDB"
+}

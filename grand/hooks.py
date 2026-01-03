@@ -27,6 +27,13 @@ doc_events = {
     }
 }
 
+# Create Journal Entry from sales invoice deductions on submit
+doc_events.update({
+    "Sales Invoice": {
+        "on_submit": "grand.grand.sales_invoice_events.create_journal_entry_from_deductions"
+    }
+})
+
 
 
 
@@ -53,6 +60,10 @@ doc_events = {
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
+# include a client script for Sales Invoice
+doctype_js = {
+    "Sales Invoice": "public/js/sales_invoice.js"
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
