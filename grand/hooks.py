@@ -30,7 +30,7 @@ doc_events = {
 # Create Journal Entry from sales invoice deductions on submit
 doc_events.update({
     "Sales Invoice": {
-        "on_submit": "grand.grand.sales_invoice_events.create_journal_entry_from_deductions"
+        "on_submit": "grand.sales_invoice_events.create_journal_entry_from_deductions"
     }
 })
 
