@@ -256,6 +256,18 @@ def create_deduction_je(sinv_name):
 
     if not cleaned_accounts:
         frappe.throw("Prepared Journal Entry has no non-zero lines")
+    # Log prepared accounts for debugging
+    try:
+        frappe.log_error(message=f"Prepared JE accounts for {sinv.name}: {cleaned_accounts}", title=f"Prepared JE {sinv.name}")
+    except Exception:
+        pass
+
+    # Validate each row has an account and non-zero amounts (include row data in error)
+    for idx, a in enumerate(cleaned_accounts, start=1):
+        if not a.get("account"):
+            frappe.throw(f"JE row {idx} is missing an Account: {a}")
+        if a.get("debit", 0.0) == 0.0 and a.get("credit", 0.0) == 0.0:
+            frappe.throw(f"Row {idx}: Both Debit and Credit values cannot be zero (row data: {a})")
 
     total_debit = flt(sum([a.get("debit", 0.0) for a in cleaned_accounts]), 2)
     total_credit = flt(sum([a.get("credit", 0.0) for a in cleaned_accounts]), 2)
