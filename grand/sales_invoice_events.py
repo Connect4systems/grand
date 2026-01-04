@@ -101,11 +101,18 @@ def create_journal_entry_from_deductions(doc, method=None):
         # nothing to post
         return
 
+    # Validate each row has an account and non-zero amounts (not both zero)
+    for idx, a in enumerate(cleaned_accounts, start=1):
+        if not a.get("account"):
+            frappe.throw(f"JE row {idx} is missing an Account: {a}")
+        if a.get("debit", 0.0) == 0.0 and a.get("credit", 0.0) == 0.0:
+            frappe.throw(f"Row {idx}: Both Debit and Credit values cannot be zero (row data: {a})")
+
     # Validate totals
     total_debit = flt(sum([a.get("debit", 0.0) for a in cleaned_accounts]), 2)
     total_credit = flt(sum([a.get("credit", 0.0) for a in cleaned_accounts]), 2)
     if total_debit == 0.0 or total_credit == 0.0:
-        frappe.throw("Both total Debit and Credit must be non-zero for deductions Journal Entry")
+        frappe.throw(f"Both total Debit and Credit must be non-zero for deductions Journal Entry (debit={total_debit}, credit={total_credit})")
     if abs(total_debit - total_credit) > 0.01:
         frappe.throw(f"Total Debit ({total_debit}) and Credit ({total_credit}) do not balance for deductions Journal Entry")
 
