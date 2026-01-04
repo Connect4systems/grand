@@ -19,6 +19,15 @@ def create_journal_entry_from_deductions(doc, method=None):
         frappe.log_error(message=f"Sales Invoice {doc.name} has no receivable account (debit_to). JE not created.")
         return
 
+    # If receivable/payable account is the Arabic receivables account, require party info
+    try:
+        if receivable_account and (receivable_account == "مدينون - G" or "مدينون" in receivable_account):
+            if not getattr(doc, "party_type", None) or not getattr(doc, "party", None):
+                frappe.throw("Party Type and Party are required when Receivable/Payable account is 'مدينون - G'")
+    except Exception:
+        # defensive: if any unexpected issue inspecting the account, log and continue
+        frappe.log_error(message=f"Error validating party for Sales Invoice {doc.name} receivable account: {receivable_account}")
+
     accounts = []
 
     # process percent-based deductions (child table `Deduction`)
