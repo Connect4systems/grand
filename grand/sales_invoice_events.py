@@ -109,6 +109,12 @@ def create_journal_entry_from_deductions(doc, method=None):
     if abs(total_debit - total_credit) > 0.01:
         frappe.throw(f"Total Debit ({total_debit}) and Credit ({total_credit}) do not balance for deductions Journal Entry")
 
+    # Log prepared accounts for debugging before creating JE
+    try:
+        frappe.log_error(message=f"Prepared JE accounts for {doc.name}: {cleaned_accounts}", title=f"Prepared JE {doc.name}")
+    except Exception:
+        pass
+
     je = frappe.get_doc({
         "doctype": "Journal Entry",
         "voucher_type": "Journal Entry",
