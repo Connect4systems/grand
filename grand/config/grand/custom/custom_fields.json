@@ -68,4 +68,15 @@
     "hidden": 0,
     "options": "currency"
   }
+  ,
+  {
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice",
+    "fieldname": "clearence",
+    "label": "Clearence",
+    "fieldtype": "Link",
+    "options": "Clearence",
+    "insert_after": "total_deductions",
+    "hidden": 0
+  }
 ]

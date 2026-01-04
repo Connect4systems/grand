@@ -69,5 +69,7 @@ def create_all():
     create_custom_field_if_missing("Sales Invoice", "sect_totals", "", "Section Break", insert_after="contractor_order")
     create_custom_field_if_missing("Sales Invoice", "base_total_deductions", "Base Total Deductions", "Currency", insert_after="sect_totals")
     create_custom_field_if_missing("Sales Invoice", "total_deductions", "Total Deductions", "Currency", insert_after="base_total_deductions")
+    # Link to Clearence doc (used by contractor app mapping)
+    create_custom_field_if_missing("Sales Invoice", "clearence", "Clearence", "Link", options="Clearence", insert_after="total_deductions")
 
     frappe.db.commit()
