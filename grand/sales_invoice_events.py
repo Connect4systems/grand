@@ -234,10 +234,25 @@ def create_deduction_je(sinv_name):
                 "project": project or getattr(sinv, "project", None)
             })
 
-    if not accounts:
+    # Remove any deduction rows missing account or with zero amounts
+    valid_accounts = []
+    for a in accounts:
+        a_debit = flt(a.get("debit", 0.0), 2)
+        if not a.get("account"):
+            # skip rows without account
+            continue
+        if a_debit == 0.0:
+            # skip zero-amount rows
+            continue
+        a["debit"] = a_debit
+        a["credit"] = flt(a.get("credit", 0.0), 2)
+        valid_accounts.append(a)
+
+    if not valid_accounts:
         frappe.throw("No valid deduction amounts found to create JE")
 
-    # Must have non-zero total to credit the receivable/customer line
+    # Derive total deductions from the deduction rows to avoid parsing mismatches
+    total_deductions = flt(sum([a.get("debit", 0.0) for a in valid_accounts]), 2)
     if not total_deductions or flt(total_deductions, 2) == 0.0:
         frappe.throw("Total deduction amount is zero. Cannot create Journal Entry.")
 
