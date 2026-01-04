@@ -1,5 +1,21 @@
 import frappe
 from frappe.utils import flt
+import frappe
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils.data import nowdate
+from frappe import _
+from frappe import throw
+from frappe import get_doc
+from frappe import get_cached_doc
+from frappe import enqueue
+from frappe import log_error
+from frappe import get_site_path
+from frappe import local
+from frappe import scrub
+from frappe import permissions
+from frappe import msgprint
+from frappe import cint
 
 
 def create_journal_entry_from_deductions(doc, method=None):
@@ -137,3 +153,101 @@ def create_journal_entry_from_deductions(doc, method=None):
     except Exception:
         # if submit fails due to permissions, leave as Draft and log
         frappe.log_error(message=f"Failed to submit JE {je.name} for Sales Invoice {doc.name}. Accounts: {cleaned_accounts}")
+
+
+@frappe.whitelist()
+def create_deduction_je(sinv_name):
+    """Create a Draft Journal Entry for Sales Invoice `sinv_name` using deduction rows.
+
+    Returns the Journal Entry name.
+    """
+    sinv = frappe.get_doc("Sales Invoice", sinv_name)
+
+    if not (getattr(sinv, "deductions", None) or getattr(sinv, "deduction_table", None)):
+        frappe.throw("No deduction rows found on Sales Invoice")
+
+    receivable_account = getattr(sinv, "debit_to", None)
+    if not receivable_account:
+        frappe.throw("Sales Invoice has no Receivable account (debit_to)")
+
+    # prepare lines: deduction rows as debits, receivable as a single credit
+    accounts = []
+    total_deductions = 0.0
+
+    for row in getattr(sinv, "deductions", []) or []:
+        value = flt(row.value, 2) if getattr(row, "value", None) else 0.0
+        if not value:
+            # try percent-based calculation
+            value = flt((flt(row.percent or 0) * flt(sinv.rounded_total or 0) / 100.0), 2)
+        if not value:
+            continue
+        total_deductions = flt(total_deductions + value, 2)
+        accounts.append({
+            "account": row.account,
+            "debit": value,
+            "credit": 0.0,
+            "cost_center": getattr(row, "cost_center", None) or getattr(sinv, "cost_center", None),
+            "project": getattr(row, "project", None) or getattr(sinv, "project", None)
+        })
+
+    for row in getattr(sinv, "deduction_table", []) or []:
+        amt = flt(row.amount, 2) if getattr(row, "amount", None) else 0.0
+        if not amt:
+            continue
+        total_deductions = flt(total_deductions + amt, 2)
+        accounts.append({
+            "account": row.account,
+            "debit": amt,
+            "credit": 0.0,
+            "cost_center": getattr(row, "cost_center", None) or getattr(sinv, "cost_center", None),
+            "project": getattr(row, "project", None) or getattr(sinv, "project", None)
+        })
+
+    if not accounts:
+        frappe.throw("No valid deduction amounts found to create JE")
+
+    receivable_row = {
+        "account": receivable_account,
+        "debit": 0.0,
+        "credit": total_deductions,
+        "cost_center": getattr(sinv, "cost_center", None),
+        "project": getattr(sinv, "project", None),
+        "party_type": getattr(sinv, "party_type", None),
+        "party": getattr(sinv, "party", None),
+        "reference_type": "Sales Invoice",
+        "reference_name": sinv.name
+    }
+
+    # insert receivable first
+    accounts.insert(0, receivable_row)
+
+    # clean and validate
+    cleaned_accounts = []
+    for a in accounts:
+        a["debit"] = flt(a.get("debit", 0.0), 2)
+        a["credit"] = flt(a.get("credit", 0.0), 2)
+        if not (a["debit"] == 0.0 and a["credit"] == 0.0):
+            cleaned_accounts.append(a)
+
+    if not cleaned_accounts:
+        frappe.throw("Prepared Journal Entry has no non-zero lines")
+
+    total_debit = flt(sum([a.get("debit", 0.0) for a in cleaned_accounts]), 2)
+    total_credit = flt(sum([a.get("credit", 0.0) for a in cleaned_accounts]), 2)
+    if total_debit == 0.0 or total_credit == 0.0:
+        frappe.throw(f"Both total Debit and Credit must be non-zero for deductions Journal Entry (debit={total_debit}, credit={total_credit})")
+    if abs(total_debit - total_credit) > 0.01:
+        frappe.throw(f"Total Debit ({total_debit}) and Credit ({total_credit}) do not balance for deductions Journal Entry")
+
+    je = frappe.get_doc({
+        "doctype": "Journal Entry",
+        "voucher_type": "Journal Entry",
+        "company": sinv.company,
+        "posting_date": sinv.posting_date or nowdate(),
+        "user_remark": f"Deductions for Sales Invoice {sinv.name}",
+        "accounts": cleaned_accounts,
+        "docstatus": 0
+    })
+
+    je.insert()
+    return je.name
