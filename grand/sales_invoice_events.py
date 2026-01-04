@@ -89,14 +89,21 @@ def create_journal_entry_from_deductions(doc, method=None):
     }
     accounts.insert(0, receivable_row)
 
-    # Validate lines: no line can have both debit and credit zero
+    # Normalize amounts to floats and remove any accidental zero/zero lines
+    cleaned_accounts = []
     for a in accounts:
-        if flt(a.get("debit", 0.0), 2) == 0.0 and flt(a.get("credit", 0.0), 2) == 0.0:
-            frappe.throw("Journal Entry lines cannot have both Debit and Credit as zero")
+        a["debit"] = flt(a.get("debit", 0.0), 2)
+        a["credit"] = flt(a.get("credit", 0.0), 2)
+        if not (a["debit"] == 0.0 and a["credit"] == 0.0):
+            cleaned_accounts.append(a)
+
+    if not cleaned_accounts:
+        # nothing to post
+        return
 
     # Validate totals
-    total_debit = flt(sum([flt(a.get("debit", 0.0), 2) for a in accounts]), 2)
-    total_credit = flt(sum([flt(a.get("credit", 0.0), 2) for a in accounts]), 2)
+    total_debit = flt(sum([a.get("debit", 0.0) for a in cleaned_accounts]), 2)
+    total_credit = flt(sum([a.get("credit", 0.0) for a in cleaned_accounts]), 2)
     if total_debit == 0.0 or total_credit == 0.0:
         frappe.throw("Both total Debit and Credit must be non-zero for deductions Journal Entry")
     if abs(total_debit - total_credit) > 0.01:
@@ -108,7 +115,7 @@ def create_journal_entry_from_deductions(doc, method=None):
         "company": company,
         "posting_date": posting_date,
         "user_remark": f"Deductions for Sales Invoice {doc.name}",
-        "accounts": accounts
+        "accounts": cleaned_accounts
     })
 
     je.insert()
@@ -116,4 +123,4 @@ def create_journal_entry_from_deductions(doc, method=None):
         je.submit()
     except Exception:
         # if submit fails due to permissions, leave as Draft and log
-        frappe.log_error(message=f"Failed to submit JE {je.name} for Sales Invoice {doc.name}")
+        frappe.log_error(message=f"Failed to submit JE {je.name} for Sales Invoice {doc.name}. Accounts: {cleaned_accounts}")
