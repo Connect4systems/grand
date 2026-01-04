@@ -53,38 +53,39 @@ def create_journal_entry_from_deductions(doc, method=None):
     # process percent-based deductions (child table `Deduction`)
     for row in getattr(doc, "deductions", []) or []:
         try:
-            value = flt(row.value, 2) if row.value else flt((flt(row.percent, 2) * flt(doc.rounded_total, 2) / 100.0), 2)
+            # support both Document-style rows and dict-like rows
+            value = flt(row.get("value") if hasattr(row, "get") else getattr(row, "value", None), 2) if (hasattr(row, "get") and row.get("value") is not None) or getattr(row, "value", None) else flt((flt(row.get("percent") if hasattr(row, "get") else getattr(row, "percent", 0), 2) * flt(doc.rounded_total, 2) / 100.0), 2)
         except Exception:
             value = 0.0
         if not value:
             continue
         total_deductions = flt(total_deductions + value, 2)
         accounts.append({
-            "account": row.account,
+            "account": (row.get("account") if hasattr(row, "get") else getattr(row, "account", None)),
             "debit": value,
             "credit": 0.0,
-            "cost_center": getattr(row, "cost_center", None) or getattr(doc, "cost_center", None),
-            "project": getattr(row, "project", None) or getattr(doc, "project", None)
+            "cost_center": (row.get("cost_center") if hasattr(row, "get") else getattr(row, "cost_center", None)) or getattr(doc, "cost_center", None),
+            "project": (row.get("project") if hasattr(row, "get") else getattr(row, "project", None)) or getattr(doc, "project", None)
         })
 
     # process free-form deduction table (child table `Deduction Table`)
     for row in getattr(doc, "deduction_table", []) or []:
         try:
-            amt = flt(row.amount, 2)
+            amt = flt(row.get("amount") if hasattr(row, "get") else getattr(row, "amount", 0), 2)
         except Exception:
             try:
-                amt = flt(float(row.amount))
+                amt = flt(float(row.get("amount") if hasattr(row, "get") else getattr(row, "amount", 0)))
             except Exception:
                 amt = 0.0
         if not amt:
             continue
         total_deductions = flt(total_deductions + amt, 2)
         accounts.append({
-            "account": row.account,
+            "account": (row.get("account") if hasattr(row, "get") else getattr(row, "account", None)),
             "debit": amt,
             "credit": 0.0,
-            "cost_center": getattr(row, "cost_center", None) or getattr(doc, "cost_center", None),
-            "project": getattr(row, "project", None) or getattr(doc, "project", None)
+            "cost_center": (row.get("cost_center") if hasattr(row, "get") else getattr(row, "cost_center", None)) or getattr(doc, "cost_center", None),
+            "project": (row.get("project") if hasattr(row, "get") else getattr(row, "project", None)) or getattr(doc, "project", None)
         })
 
     # No deductions => nothing to do
@@ -203,19 +204,21 @@ def create_deduction_je(sinv_name):
             })
     else:
         for row in getattr(sinv, "deductions", []) or []:
-            value = flt(row.value, 2) if getattr(row, "value", None) else 0.0
-            if not value:
-                # try percent-based calculation
-                value = flt((flt(row.percent or 0) * flt(sinv.rounded_total or 0) / 100.0), 2)
+                # support both Document-style rows and dict-like rows
+                value = flt(row.get("value") if hasattr(row, "get") else getattr(row, "value", 0), 2) if (hasattr(row, "get") and row.get("value") is not None) or getattr(row, "value", None) else 0.0
+                if not value:
+                    # try percent-based calculation
+                    percent = row.get("percent") if hasattr(row, "get") else getattr(row, "percent", 0)
+                    value = flt((flt(percent or 0) * flt(sinv.rounded_total or 0) / 100.0), 2)
             if not value:
                 continue
             total_deductions = flt(total_deductions + value, 2)
             accounts.append({
-                "account": row.account,
-                "debit": value,
-                "credit": 0.0,
-                "cost_center": getattr(row, "cost_center", None) or getattr(sinv, "cost_center", None),
-                "project": getattr(row, "project", None) or getattr(sinv, "project", None)
+                    "account": (row.get("account") if hasattr(row, "get") else getattr(row, "account", None)),
+                    "debit": value,
+                    "credit": 0.0,
+                    "cost_center": (row.get("cost_center") if hasattr(row, "get") else getattr(row, "cost_center", None)) or getattr(sinv, "cost_center", None),
+                    "project": (row.get("project") if hasattr(row, "get") else getattr(row, "project", None)) or getattr(sinv, "project", None)
             })
 
     if not accounts:
