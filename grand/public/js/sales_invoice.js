@@ -53,6 +53,12 @@ frappe.ui.form.on("Sales Invoice", {
             });
         }
     }
+    ,
+    // Recompute totals when Sales Invoice loaded/changed
+    refresh: function(frm) {
+        // compute totals on refresh (also when doc loaded)
+        compute_deduction_totals(frm);
+    }
 });
 
 frappe.ui.form.on("Deduction", {
@@ -65,3 +71,61 @@ frappe.ui.form.on("Deduction", {
         frappe.model.set_value(cdt, cdn, "value", rounded);
     }
 });
+
+// Also listen to Deduction Table child doctype changes
+frappe.ui.form.on("Deduction Table", {
+    amount: function(frm, cdt, cdn){
+        compute_deduction_totals(frm);
+    },
+    cost_center: function(frm, cdt, cdn){
+        // keep UI responsive; no-op but can trigger totals if desired
+    },
+    // when a row is added/removed, recalc
+    refresh: function(frm, cdt, cdn){
+        compute_deduction_totals(frm);
+    }
+});
+
+// When a Deduction row value changes, update totals
+frappe.ui.form.on("Deduction", {
+    value: function(frm, cdt, cdn){
+        compute_deduction_totals(frm);
+    },
+    account: function(frm, cdt, cdn){
+        // recalc just in case
+        compute_deduction_totals(frm);
+    },
+    // detect add/remove
+    refresh: function(frm, cdt, cdn){
+        compute_deduction_totals(frm);
+    }
+});
+
+function compute_deduction_totals(frm){
+    let total = 0.0;
+    let base_total = 0.0;
+
+    (frm.doc.deductions || []).forEach(r => {
+        const v = parseFloat(r.value) || 0;
+        total += v;
+        base_total += v; // assuming same currency; adjust if needed
+    });
+
+    (frm.doc.deduction_table || []).forEach(r => {
+        const a = parseFloat(r.amount) || 0;
+        total += a;
+        base_total += a;
+    });
+
+    total = Math.round(total * 100) / 100;
+    base_total = Math.round(base_total * 100) / 100;
+
+    if (frm.doc.total_deductions !== total) {
+        frm.set_value('total_deductions', total);
+    }
+    if (frm.doc.base_total_deductions !== base_total) {
+        frm.set_value('base_total_deductions', base_total);
+    }
+    frm.refresh_field('deduction_table');
+    frm.refresh_field('deductions');
+}

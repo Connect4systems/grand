@@ -60,9 +60,6 @@ def create_all():
     ]
     create_doctype_if_missing("Deduction Table", "Grand", dt_fields, istable=1)
 
-    # Selling Deductions Template doctype (simple master used by Link field)
-    create_doctype_if_missing("Selling Deductions Template", "Grand", [], istable=0)
-
     # Custom fields on Sales Invoice
     create_custom_field_if_missing("Sales Invoice", "deductions", "Deductions", "Table", options="Deduction", insert_after="items")
     create_custom_field_if_missing("Sales Invoice", "deduction_table", "Deduction Table", "Table", options="Deduction Table", insert_after="deductions")
