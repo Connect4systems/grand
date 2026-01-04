@@ -46,6 +46,7 @@ def create_all():
         {"fieldname": "account", "fieldtype": "Link", "label": "Account", "options": "Account", "reqd": 1},
         {"fieldname": "percent", "fieldtype": "Percent", "label": "Percent"},
         {"fieldname": "value", "fieldtype": "Float", "label": "Value", "read_only": 1},
+        {"fieldname": "project", "fieldtype": "Link", "label": "Project", "options": "Project"},
     ]
     create_doctype_if_missing("Deduction", "Grand", deduction_fields, istable=1)
 
@@ -55,6 +56,7 @@ def create_all():
         {"fieldname": "description", "fieldtype": "Data", "label": "Description"},
         {"fieldname": "cost_center", "fieldtype": "Link", "label": "Cost Center", "options": "Cost Center"},
         {"fieldname": "amount", "fieldtype": "Float", "label": "Amount", "reqd": 1},
+        {"fieldname": "project", "fieldtype": "Link", "label": "Project", "options": "Project"},
     ]
     create_doctype_if_missing("Deduction Table", "Grand", dt_fields, istable=1)
 

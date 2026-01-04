@@ -16,17 +16,13 @@ def create_journal_entry_from_deductions(doc, method=None):
     posting_date = getattr(doc, "posting_date", None) or frappe.utils.nowdate()
     receivable_account = getattr(doc, "debit_to", None)
     if not receivable_account:
-        frappe.log_error(message=f"Sales Invoice {doc.name} has no receivable account (debit_to). JE not created.")
+        frappe.log_error(message=f"Sales Invoice {doc.name} has no receivable account (debit_to). JE not created.", title=f"Sales Invoice {doc.name}")
         return
 
     # If receivable/payable account is the Arabic receivables account, require party info
-    try:
-        if receivable_account and (receivable_account == "مدينون - G" or "مدينون" in receivable_account):
-            if not getattr(doc, "party_type", None) or not getattr(doc, "party", None):
-                frappe.throw("Party Type and Party are required when Receivable/Payable account is 'مدينون - G'")
-    except Exception:
-        # defensive: if any unexpected issue inspecting the account, log and continue
-        frappe.log_error(message=f"Error validating party for Sales Invoice {doc.name} receivable account: {receivable_account}")
+    if receivable_account and ("مدينون - G" in receivable_account or "مدينون" in receivable_account):
+        if not getattr(doc, "party_type", None) or not getattr(doc, "party", None):
+            frappe.throw("Party Type and Party are required when Receivable/Payable account is 'مدينون - G'")
 
     accounts = []
 
@@ -42,13 +38,17 @@ def create_journal_entry_from_deductions(doc, method=None):
             "account": row.account,
             "debit": value,
             "credit": 0.0,
-            "cost_center": getattr(row, "cost_center", None) or getattr(doc, "cost_center", None)
+            "cost_center": getattr(row, "cost_center", None) or getattr(doc, "cost_center", None),
+            "project": getattr(row, "project", None) or getattr(doc, "project", None)
         })
         accounts.append({
             "account": receivable_account,
             "debit": 0.0,
             "credit": value,
-            "cost_center": getattr(doc, "cost_center", None)
+            "cost_center": getattr(doc, "cost_center", None),
+            "project": getattr(doc, "project", None),
+            "party_type": getattr(doc, "party_type", None),
+            "party": getattr(doc, "party", None)
         })
 
     # process free-form deduction table (child table `Deduction Table`)
@@ -66,13 +66,17 @@ def create_journal_entry_from_deductions(doc, method=None):
             "account": row.account,
             "debit": amt,
             "credit": 0.0,
-            "cost_center": getattr(row, "cost_center", None) or getattr(doc, "cost_center", None)
+            "cost_center": getattr(row, "cost_center", None) or getattr(doc, "cost_center", None),
+            "project": getattr(row, "project", None) or getattr(doc, "project", None)
         })
         accounts.append({
             "account": receivable_account,
             "debit": 0.0,
             "credit": amt,
-            "cost_center": getattr(doc, "cost_center", None)
+            "cost_center": getattr(doc, "cost_center", None),
+            "project": getattr(doc, "project", None),
+            "party_type": getattr(doc, "party_type", None),
+            "party": getattr(doc, "party", None)
         })
 
     if not accounts:
