@@ -170,6 +170,17 @@ def create_deduction_je(sinv_name):
     if not receivable_account:
         frappe.throw("Sales Invoice has no Receivable account (debit_to)")
 
+    # If receivable/payable account is the Arabic receivables account, require party info
+    if receivable_account and ("مدينون - G" in receivable_account or "مدينون" in receivable_account):
+        # Auto-fill party fields from standard Sales Invoice `customer` when possible
+        if not getattr(sinv, "party_type", None) and getattr(sinv, "customer", None):
+            setattr(sinv, "party_type", "Customer")
+        if not getattr(sinv, "party", None) and getattr(sinv, "customer", None):
+            setattr(sinv, "party", getattr(sinv, "customer"))
+
+        if not getattr(sinv, "party_type", None) or not getattr(sinv, "party", None):
+            frappe.throw("Party Type and Party are required when Receivable/Payable account is 'مدينون - G'")
+
     # prepare lines: deduction rows as debits, receivable as a single credit
     accounts = []
     total_deductions = 0.0
