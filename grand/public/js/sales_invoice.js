@@ -1,9 +1,13 @@
 frappe.ui.form.on("Sales Invoice", {
     refresh: function(frm){
-        if (frm.doc.docstatus == 1 && frm.doc.contractor_order && (frm.doc.deductions && frm.doc.deductions.length || frm.doc.deduction_table && frm.doc.deduction_table.length)){
+        // compute totals on refresh (also when doc loaded)
+        compute_deduction_totals(frm);
+
+        // Show Deduction Entry button after submit when there are deduction rows
+        if (frm.doc.docstatus == 1 && ((frm.doc.deductions && frm.doc.deductions.length) || (frm.doc.deduction_table && frm.doc.deduction_table.length))) {
             frm.add_custom_button(__('Deduction Entry'), () => {
                 frm.events.create_deduction_entry(frm);
-            }, __('Create'))
+            }, __('Create'));
         }
     },
     create_deduction_entry: function(frm){
@@ -54,11 +58,7 @@ frappe.ui.form.on("Sales Invoice", {
         }
     }
     ,
-    // Recompute totals when Sales Invoice loaded/changed
-    refresh: function(frm) {
-        // compute totals on refresh (also when doc loaded)
-        compute_deduction_totals(frm);
-    }
+    // (refresh handler merged above)
 });
 
 frappe.ui.form.on("Deduction", {
