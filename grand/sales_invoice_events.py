@@ -204,21 +204,34 @@ def create_deduction_je(sinv_name):
             })
     else:
         for row in getattr(sinv, "deductions", []) or []:
-                # support both Document-style rows and dict-like rows
-                value = flt(row.get("value") if hasattr(row, "get") else getattr(row, "value", 0), 2) if (hasattr(row, "get") and row.get("value") is not None) or getattr(row, "value", None) else 0.0
-                if not value:
-                    # try percent-based calculation
-                    percent = row.get("percent") if hasattr(row, "get") else getattr(row, "percent", 0)
+            # support both Document-style rows and dict-like rows
+            if hasattr(row, "get"):
+                value = flt(row.get("value") or 0.0, 2)
+                percent = row.get("percent") or 0
+                account = row.get("account")
+                cost_center = row.get("cost_center")
+                project = row.get("project")
+            else:
+                value = flt(getattr(row, "value", 0.0), 2)
+                percent = getattr(row, "percent", 0)
+                account = getattr(row, "account", None)
+                cost_center = getattr(row, "cost_center", None)
+                project = getattr(row, "project", None)
+
+            if not value:
+                try:
                     value = flt((flt(percent or 0) * flt(sinv.rounded_total or 0) / 100.0), 2)
+                except Exception:
+                    value = 0.0
             if not value:
                 continue
             total_deductions = flt(total_deductions + value, 2)
             accounts.append({
-                    "account": (row.get("account") if hasattr(row, "get") else getattr(row, "account", None)),
-                    "debit": value,
-                    "credit": 0.0,
-                    "cost_center": (row.get("cost_center") if hasattr(row, "get") else getattr(row, "cost_center", None)) or getattr(sinv, "cost_center", None),
-                    "project": (row.get("project") if hasattr(row, "get") else getattr(row, "project", None)) or getattr(sinv, "project", None)
+                "account": account,
+                "debit": value,
+                "credit": 0.0,
+                "cost_center": cost_center or getattr(sinv, "cost_center", None),
+                "project": project or getattr(sinv, "project", None)
             })
 
     if not accounts:
