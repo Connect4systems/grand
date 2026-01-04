@@ -185,46 +185,60 @@ def create_deduction_je(sinv_name):
     accounts = []
     total_deductions = 0.0
 
-    for row in getattr(sinv, "deductions", []) or []:
-        value = flt(row.value, 2) if getattr(row, "value", None) else 0.0
-        if not value:
-            # try percent-based calculation
-            value = flt((flt(row.percent or 0) * flt(sinv.rounded_total or 0) / 100.0), 2)
-        if not value:
-            continue
-        total_deductions = flt(total_deductions + value, 2)
-        accounts.append({
-            "account": row.account,
-            "debit": value,
-            "credit": 0.0,
-            "cost_center": getattr(row, "cost_center", None) or getattr(sinv, "cost_center", None),
-            "project": getattr(row, "project", None) or getattr(sinv, "project", None)
-        })
-
-    for row in getattr(sinv, "deduction_table", []) or []:
-        amt = flt(row.amount, 2) if getattr(row, "amount", None) else 0.0
-        if not amt:
-            continue
-        total_deductions = flt(total_deductions + amt, 2)
-        accounts.append({
-            "account": row.account,
-            "debit": amt,
-            "credit": 0.0,
-            "cost_center": getattr(row, "cost_center", None) or getattr(sinv, "cost_center", None),
-            "project": getattr(row, "project", None) or getattr(sinv, "project", None)
-        })
+    # Prefer explicit amounts from `deduction_table` (user-entered amounts). If none present,
+    # fall back to percent/value rows in `deductions`.
+    dt_rows = getattr(sinv, "deduction_table", []) or []
+    if dt_rows:
+        for row in dt_rows:
+            amt = flt(row.amount, 2) if getattr(row, "amount", None) else 0.0
+            if not amt:
+                continue
+            total_deductions = flt(total_deductions + amt, 2)
+            accounts.append({
+                "account": row.account,
+                "debit": amt,
+                "credit": 0.0,
+                "cost_center": getattr(row, "cost_center", None) or getattr(sinv, "cost_center", None),
+                "project": getattr(row, "project", None) or getattr(sinv, "project", None)
+            })
+    else:
+        for row in getattr(sinv, "deductions", []) or []:
+            value = flt(row.value, 2) if getattr(row, "value", None) else 0.0
+            if not value:
+                # try percent-based calculation
+                value = flt((flt(row.percent or 0) * flt(sinv.rounded_total or 0) / 100.0), 2)
+            if not value:
+                continue
+            total_deductions = flt(total_deductions + value, 2)
+            accounts.append({
+                "account": row.account,
+                "debit": value,
+                "credit": 0.0,
+                "cost_center": getattr(row, "cost_center", None) or getattr(sinv, "cost_center", None),
+                "project": getattr(row, "project", None) or getattr(sinv, "project", None)
+            })
 
     if not accounts:
         frappe.throw("No valid deduction amounts found to create JE")
 
+    # Must have non-zero total to credit the receivable/customer line
+    if not total_deductions or flt(total_deductions, 2) == 0.0:
+        frappe.throw("Total deduction amount is zero. Cannot create Journal Entry.")
+
+    # Ensure party info is present for receivable if required (and fill from customer when available)
+    if not getattr(sinv, "party_type", None) and getattr(sinv, "customer", None):
+        setattr(sinv, "party_type", "Customer")
+    if not getattr(sinv, "party", None) and getattr(sinv, "customer", None):
+        setattr(sinv, "party", getattr(sinv, "customer"))
+
     receivable_row = {
         "account": receivable_account,
         "debit": 0.0,
-        "credit": total_deductions,
+        "credit": flt(total_deductions, 2),
         "cost_center": getattr(sinv, "cost_center", None),
         "project": getattr(sinv, "project", None),
         "party_type": getattr(sinv, "party_type", None),
-        "party": getattr(sinv, "party", None),
+        "party": getattr(sinv, "party", None) or getattr(sinv, "customer", None),
         "reference_type": "Sales Invoice",
         "reference_name": sinv.name
     }
