@@ -45,8 +45,8 @@ def create_journal_entry_from_deductions(doc, method=None):
         total_deductions = flt(total_deductions + value, 2)
         accounts.append({
             "account": row.account,
-            "debit": 0.0,
-            "credit": value,
+            "debit": value,
+            "credit": 0.0,
             "cost_center": getattr(row, "cost_center", None) or getattr(doc, "cost_center", None),
             "project": getattr(row, "project", None) or getattr(doc, "project", None)
         })
@@ -65,8 +65,8 @@ def create_journal_entry_from_deductions(doc, method=None):
         total_deductions = flt(total_deductions + amt, 2)
         accounts.append({
             "account": row.account,
-            "debit": 0.0,
-            "credit": amt,
+            "debit": amt,
+            "credit": 0.0,
             "cost_center": getattr(row, "cost_center", None) or getattr(doc, "cost_center", None),
             "project": getattr(row, "project", None) or getattr(doc, "project", None)
         })
@@ -75,16 +75,19 @@ def create_journal_entry_from_deductions(doc, method=None):
     if not accounts:
         return
 
-    # Add a single receivable (customer) debit for the total of deductions
-    accounts.append({
+    # Add a single receivable (customer) credit for the total of deductions and place it first
+    receivable_row = {
         "account": receivable_account,
-        "debit": total_deductions,
-        "credit": 0.0,
+        "debit": 0.0,
+        "credit": total_deductions,
         "cost_center": getattr(doc, "cost_center", None),
         "project": getattr(doc, "project", None),
         "party_type": getattr(doc, "party_type", None),
-        "party": getattr(doc, "party", None)
-    })
+        "party": getattr(doc, "party", None),
+        "reference_type": "Sales Invoice",
+        "reference_name": getattr(doc, "name", None)
+    }
+    accounts.insert(0, receivable_row)
 
     # Validate lines: no line can have both debit and credit zero
     for a in accounts:
