@@ -21,6 +21,12 @@ def create_journal_entry_from_deductions(doc, method=None):
 
     # If receivable/payable account is the Arabic receivables account, require party info
     if receivable_account and ("مدينون - G" in receivable_account or "مدينون" in receivable_account):
+        # Auto-fill party fields from standard Sales Invoice `customer` when possible
+        if not getattr(doc, "party_type", None) and getattr(doc, "customer", None):
+            setattr(doc, "party_type", "Customer")
+        if not getattr(doc, "party", None) and getattr(doc, "customer", None):
+            setattr(doc, "party", getattr(doc, "customer"))
+
         if not getattr(doc, "party_type", None) or not getattr(doc, "party", None):
             frappe.throw("Party Type and Party are required when Receivable/Payable account is 'مدينون - G'")
 
