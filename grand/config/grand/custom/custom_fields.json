@@ -19,4 +19,53 @@
     "insert_after": "deductions",
     "hidden": 0
   }
+  ,
+  {
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice",
+    "fieldname": "selling_deductions_template",
+    "label": "Selling Deductions Template",
+    "fieldtype": "Link",
+    "options": "Selling Deductions Template",
+    "insert_after": "deduction_table",
+    "hidden": 0
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice",
+    "fieldname": "contractor_order",
+    "label": "A Contractor Order?",
+    "fieldtype": "Check",
+    "insert_after": "selling_deductions_template",
+    "hidden": 0
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice",
+    "fieldname": "sect_totals",
+    "label": "",
+    "fieldtype": "Section Break",
+    "insert_after": "contractor_order",
+    "hidden": 0
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice",
+    "fieldname": "base_total_deductions",
+    "label": "Base Total Deductions",
+    "fieldtype": "Currency",
+    "insert_after": "sect_totals",
+    "hidden": 0,
+    "options": "Company:company:default_currency"
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice",
+    "fieldname": "total_deductions",
+    "label": "Total Deductions",
+    "fieldtype": "Currency",
+    "insert_after": "base_total_deductions",
+    "hidden": 0,
+    "options": "currency"
+  }
 ]

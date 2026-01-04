@@ -61,5 +61,11 @@ def create_all():
     # Custom fields on Sales Invoice
     create_custom_field_if_missing("Sales Invoice", "deductions", "Deductions", "Table", options="Deduction", insert_after="items")
     create_custom_field_if_missing("Sales Invoice", "deduction_table", "Deduction Table", "Table", options="Deduction Table", insert_after="deductions")
+    # Additional fields to support contractor deductions and templates
+    create_custom_field_if_missing("Sales Invoice", "selling_deductions_template", "Selling Deductions Template", "Link", options="Selling Deductions Template", insert_after="deduction_table")
+    create_custom_field_if_missing("Sales Invoice", "contractor_order", "A Contractor Order?", "Check", insert_after="selling_deductions_template")
+    create_custom_field_if_missing("Sales Invoice", "sect_totals", "", "Section Break", insert_after="contractor_order")
+    create_custom_field_if_missing("Sales Invoice", "base_total_deductions", "Base Total Deductions", "Currency", insert_after="sect_totals")
+    create_custom_field_if_missing("Sales Invoice", "total_deductions", "Total Deductions", "Currency", insert_after="base_total_deductions")
 
     frappe.db.commit()
