@@ -8,10 +8,26 @@ frappe.ui.form.on("Sales Invoice", {
     },
     create_deduction_entry: function(frm){
         // Default mapping - you can change method to your mapping function
-        frappe.model.open_mapped_doc({
-            method: "contractor.contractor_app.doctype.clearence.clearence.create_a_payment",
-            frm: frm
-        })
+            if (!frm.doc.name) return;
+            frappe.confirm(
+                __('Create a Draft Journal Entry for deductions for this Sales Invoice?'),
+                function() {
+                    frm.call({
+                        method: 'grand.sales_invoice_events.create_deduction_je',
+                        args: { sinv_name: frm.doc.name },
+                        callback: function(r) {
+                            if(!r.exc && r.message) {
+                                frappe.msgprint({
+                                    message: __('Draft Journal Entry {0} created. Open it to review and submit as customer credit.', [r.message]),
+                                    indicator: 'green'
+                                });
+                                // open the created JE
+                                frappe.set_route('Form', 'Journal Entry', r.message);
+                            }
+                        }
+                    });
+                }
+            );
     },
     selling_deductions_template: function(frm){
         if(frm.doc.selling_deductions_template) {
