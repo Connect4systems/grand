@@ -119,12 +119,19 @@ function compute_deduction_totals(frm){
 
     total = Math.round(total * 100) / 100;
     base_total = Math.round(base_total * 100) / 100;
+    // Only set fields if they exist on the Sales Invoice doctype.
+    const has_total = frappe.meta.get_docfield(frm.doc.doctype, 'total_deductions');
+    const has_base_total = frappe.meta.get_docfield(frm.doc.doctype, 'base_total_deductions');
 
-    if (frm.doc.total_deductions !== total) {
-        frm.set_value('total_deductions', total);
+    if (has_total) {
+        if (frm.doc.total_deductions !== total) {
+            frm.set_value('total_deductions', total);
+        }
     }
-    if (frm.doc.base_total_deductions !== base_total) {
-        frm.set_value('base_total_deductions', base_total);
+    if (has_base_total) {
+        if (frm.doc.base_total_deductions !== base_total) {
+            frm.set_value('base_total_deductions', base_total);
+        }
     }
     frm.refresh_field('deduction_table');
     frm.refresh_field('deductions');
