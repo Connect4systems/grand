@@ -62,7 +62,8 @@ doc_events.update({
 # doctype_js = {"doctype" : "public/js/doctype.js"}
 # include a client script for Sales Invoice
 doctype_js = {
-    "Sales Invoice": "public/js/sales_invoice.js"
+    "Sales Invoice": "public/js/sales_invoice.js",
+    "Purchase Invoice": "public/js/purchase_invoice.js"
 }
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}

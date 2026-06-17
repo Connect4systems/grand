@@ -1,5 +1,9 @@
 frappe.ui.form.on("Sales Invoice", {
+    onload: function(frm){
+        set_sales_invoice_item_query(frm);
+    },
     refresh: function(frm){
+        set_sales_invoice_item_query(frm);
         // compute totals on refresh (also when doc loaded)
         compute_deduction_totals(frm);
 
@@ -135,4 +139,17 @@ function compute_deduction_totals(frm){
     }
     frm.refresh_field('deduction_table');
     frm.refresh_field('deductions');
+}
+
+function set_sales_invoice_item_query(frm) {
+    frm.set_query("item_code", "items", function() {
+        return {
+            query: "erpnext.controllers.queries.item_query",
+            filters: {
+                is_sales_item: 1,
+                disabled: 0,
+                has_variants: 0
+            }
+        };
+    });
 }
