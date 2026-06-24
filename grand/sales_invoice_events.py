@@ -274,16 +274,12 @@ def create_deduction_je(sinv_name):
         "reference_name": sinv.name
     }
 
-    # insert receivable first
-    accounts.insert(0, receivable_row)
+    # insert receivable first into the filtered valid_accounts list
+    valid_accounts.insert(0, receivable_row)
 
-    # clean and validate
-    cleaned_accounts = []
-    for a in accounts:
-        a["debit"] = flt(a.get("debit", 0.0), 2)
-        a["credit"] = flt(a.get("credit", 0.0), 2)
-        if not (a["debit"] == 0.0 and a["credit"] == 0.0):
-            cleaned_accounts.append(a)
+    # valid_accounts already has normalized debit/credit values and filtered rows
+    # Use it directly as cleaned_accounts
+    cleaned_accounts = valid_accounts
 
     if not cleaned_accounts:
         frappe.throw("Prepared Journal Entry has no non-zero lines")
